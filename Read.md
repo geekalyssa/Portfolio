@@ -1,4 +1,4 @@
-# 👋 Hi, I'm Priya Jain  
+# 👋 Hi, I'm Priya  
 ### 🚀 RevOps & Automation Specialist | Make.com | n8n | Clay | HubSpot | Pipedrive | AI Workflows  
 
 I automate complex workflows, integrate business systems, and apply AI to optimize lead generation and operational efficiency.
@@ -18,3 +18,4 @@ I automate complex workflows, integrate business systems, and apply AI to optimi
 - 🔗 [Upwork Profile](https://www.upwork.com/freelancers/~015653602ca6cd7895)
 - 🧠 [ProcessEase](https://www.priyajain.tech/)
 - 💼 [LinkedIn](https://www.linkedin.com/in/priyajaintech/)
+
