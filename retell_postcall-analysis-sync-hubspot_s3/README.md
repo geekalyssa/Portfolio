@@ -4,11 +4,11 @@ n8n workflows to capture **post‑call summaries** (via Retell.ai), store them i
 ## Flow (Mermaid)
 ```mermaid
 flowchart LR
-  A[Call ends] --> B[Retell.ai: Post-call summary]
-  B --> C[S3: Store raw JSON]
-  C --> D[Convert JSON to CSV (batch)]
-  D --> E[HubSpot: Upsert notes and properties]
-  E --> F[Optional: Slack or Notion for review]
+    A[Call ends] --> B[Retell ai Post-call summary]
+    B --> C[S3 Store raw JSON]
+    C --> D[Convert JSON to CSV batch]
+    D --> E[HubSpot Upsert notes and properties]
+    E --> F[Optional Slack or Notion for review]
 ```
 
 ## Highlights
