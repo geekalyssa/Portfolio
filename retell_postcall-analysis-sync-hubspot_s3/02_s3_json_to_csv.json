@@ -1,0 +1,538 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -920,
+        -1120
+      ],
+      "id": "55d9f977-{{redactedPhone}}-b209-9ee7e680df9b",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "bucketName": "test2025",
+        "returnAll": true,
+        "options": {
+          "folderKey": "Call JSON/"
+        }
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        -1180
+      ],
+      "id": "c3ba6f60-27fe-{{redactedPhone}}-4add1671682a",
+      "name": "{{connectionName}}",
+      "alwaysOutputData": true,
+      "credentials": {
+        "aws": {
+          "id": "PO8EIMyeeiWgjfW6",
+          "name": "{{connectionName}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "bucketName": "test2025",
+        "fileKey": "={{ $json.Key }}"
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        -20,
+        -1220
+      ],
+      "id": "1717042d-0f59-43c5-b488-f734d4995e12",
+      "name": "download",
+      "alwaysOutputData": true,
+      "credentials": {
+        "aws": {
+          "id": "PO8EIMyeeiWgjfW6",
+          "name": "{{connectionName}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -1240
+      ],
+      "id": "957b95a5-fb87-48e6-a08f-f42347256b87",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Get the raw double-encoded JSON string\n\nconst rawJsonString= $input.item.json.data[0].JSONfile;\n\n// Parse the inner JSON string\nconst parsed = JSON.parse(rawJsonString);\n\n// Return it as a new item\nreturn { json: parsed };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -1240
+      ],
+      "id": "972e766f-c658-{{redactedPhone}}-a833095ce423",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "include": "specifiedFields",
+        "fieldsToInclude": "=call_id, from_number, to_number, direction, call_status,  start_timestamp,  end_timestamp, duration_ms, recording_url, call_analysis, disconnection_reason, call_type, agent_id",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        860,
+        -1260
+      ],
+      "id": "4687828a-c642-4db9-a7b8-951f7ea62b81",
+      "name": "AggregateCall Data"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "bucketName": "test2025",
+        "folderName": "={{ $today.format('yyyy-MM-dd')}}",
+        "additionalFields": {
+          "parentFolderKey": "Call JSON/calls"
+        }
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        -700,
+        -1120
+      ],
+      "id": "75a158e8-cf64-4398-b4c3-461d7bf8d8e8",
+      "name": "callsFolder",
+      "credentials": {
+        "aws": {
+          "id": "PO8EIMyeeiWgjfW6",
+          "name": "{{connectionName}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "bucketName": "test2025",
+        "folderName": "={{ $today.format('yyyy-MM-dd')}}",
+        "additionalFields": {
+          "parentFolderKey": "Call JSON/cost-and-latency"
+        }
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        -1120
+      ],
+      "id": "69c27b3d-d0e8-486d-b75f-37abfb2f7762",
+      "name": "latencyFolder",
+      "credentials": {
+        "aws": {
+          "id": "PO8EIMyeeiWgjfW6",
+          "name": "{{connectionName}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "test2025",
+        "fileName": "data.csv",
+        "additionalFields": {
+          "acl": "publicRead",
+          "parentFolderKey": "=Call JSON/calls/{{ $today.format('yyyy-MM-dd')}}"
+        }
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        -1320
+      ],
+      "id": "9e054f35-01ad-4148-b2f3-ebb9794573e5",
+      "name": "callData",
+      "credentials": {
+        "aws": {
+          "id": "PO8EIMyeeiWgjfW6",
+          "name": "{{connectionName}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "include": "specifiedFields",
+        "fieldsToInclude": "call_id, latency, call_cost",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        -920
+      ],
+      "id": "fe4cd99a-b234-4c8f-b043-114053df428a",
+      "name": "AggregateCostData"
+    },
+    {
+      "parameters": {
+        "options": {
+          "delimiter": "|",
+          "headerRow": true
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1540,
+        -880
+      ],
+      "id": "d36549f3-7fea-440c-be64-d1fbac4479c3",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "test2025",
+        "fileName": "data.csv",
+        "additionalFields": {
+          "acl": "publicRead",
+          "parentFolderKey": "=Call JSON/cost-and-latency/{{ $today.format('yyyy-MM-dd')}}"
+        }
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        -900
+      ],
+      "id": "fd2fca0a-72bb-4959-9dc4-0ff67605b36e",
+      "name": "costsData",
+      "credentials": {
+        "aws": {
+          "id": "PO8EIMyeeiWgjfW6",
+          "name": "{{connectionName}}"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtMinute": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -920,
+        -1280
+      ],
+      "id": "c33d104e-7311-4b61-a397-1d38c7a3f0b0",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1220,
+        -1300
+      ],
+      "id": "8156e855-61d8-4887-aa52-6f531d958071",
+      "name": "Convert to File2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const dataArray = $input.first().json.data;\n\nreturn dataArray.map(call => ({ json: call }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -1280
+      ],
+      "id": "4f2c9af3-6281-4a71-83a5-5d3e4513830e",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const dataArray = $input.first().json.data;\n\nreturn dataArray.map(call => ({ json: call }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1280,
+        -960
+      ],
+      "id": "205ec810-f64c-4e7b-92b6-25ca53cf6d7e",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0b579796-8995-42e0-886a-efb115334d3d",
+              "name": "data",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        -780
+      ],
+      "id": "1c19f8ae-9eed-4300-b5bc-ac99b69a354c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b502f046-6e84-4264-ba99-f9cff37d1540",
+              "leftValue": "={{ $json.data[0].keys() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        380,
+        -1240
+      ],
+      "id": "ab2740b3-a097-4496-aa9e-4e791e130ad9",
+      "name": "If"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "callsFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS S3": {
+      "main": [
+        [
+          {
+            "node": "download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "AggregateCall Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AggregateCostData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AggregateCall Data": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "callsFolder": {
+      "main": [
+        [
+          {
+            "node": "latencyFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "latencyFolder": {
+      "main": [
+        [
+          {
+            "node": "AWS S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AggregateCostData": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "costsData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "callsFolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File2": {
+      "main": [
+        [
+          {
+            "node": "callData",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cd7cea19fae68e6464508a8bc0bf1e55f6a97160cbacaaa09a9edcde9677afdf"
+  }
+}

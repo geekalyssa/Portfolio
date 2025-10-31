@@ -1,0 +1,3254 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a5cda1f6-5de3-487d-babf-a4b3f5abe218",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1460,
+        -475
+      ],
+      "id": "8ef332cf-a653-4f16-a603-d639827bb2d7",
+      "name": "post_call_log",
+      "webhookId": "a5cda1f6-5de3-487d-babf-a4b3f5abe218"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "operation": "search",
+        "limit": 1,
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "hs_calculated_phone_number|string",
+                    "value": "={{ $node[\"post_call_log\"].json[\"body\"][\"call\"][\"from_number\"] }}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.1,
+      "position": [
+        -1020,
+        -575
+      ],
+      "id": "06f7c36f-4546-4d9e-88a0-fac22ec53db8",
+      "name": "searchContact",
+      "alwaysOutputData": true,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "dUTcgjxYrltJPMHl",
+          "name": "{{connectionName}}"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "contact with Phone number not found in the CRM",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -580,
+        -475
+      ],
+      "id": "367c938a-6889-4df8-823e-55cbd3a23cd7",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "engagement",
+        "type": "call",
+        "metadata": {
+          "body": "={{ \n\"call_summary: \" + $('post_call_log').item.json.body.call.call_analysis.call_summary + \"<br>\" +\n\"user_sentiment: \" + $('post_call_log').item.json.body.call.call_analysis.user_sentiment + \"<br>\" +\n\"call_id: \" + $('post_call_log').item.json.body.call.call_id + \"<br>\" +\n\"call_status: \" + $('post_call_log').item.json.body.call.call_status + \"<br>\" +\n\"recording_url( AWS ): \" + \"{{externalUrl}}"+$('set_fileName').item.json.filename + \".wav\" + \"<br>\" +\n\"Recording_JSON( AWS ): \" + \"{{externalUrl}}"+$('set_fileName').item.json.jsonFile + \"<br>\" +\n\"disconnect_reason: \" + $('post_call_log').item.json.body.call.disconnection_reason + \"<br>\" \n}}\n",
+          "durationMilliseconds": "={{ $('post_call_log').item.json.body.call.duration_ms }}",
+          "fromNumber": "={{ $('post_call_log').item.json.body.call.from_number }}",
+          "recordingUrl": "={{ $('post_call_log').item.json.body.call.recording_url }}",
+          "status": "COMPLETED",
+          "toNumber": "={{ $('post_call_log').item.json.body.call.to_number }}"
+        },
+        "additionalFields": {
+          "associations": {
+            "contactIds": "={{ $('searchContact').item.json.properties.hs_object_id }}"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.1,
+      "position": [
+        680,
+        -820
+      ],
+      "id": "ba2eaa5f-{{redactedPhone}}-b764-30a276d9e830",
+      "name": "{{connectionName}}",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "dUTcgjxYrltJPMHl",
+          "name": "{{connectionName}}"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('post_call_log').item.json.body.call.recording_url }}",
+        "options": {
+          "redirect": {},
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": false,
+              "responseFormat": "autodetect"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        -740
+      ],
+      "id": "e185375f-b2a9-4937-a072-1c59433b4df7",
+      "name": "downloadRecording"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Recording upload failed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        -500
+      ],
+      "id": "8f95f77b-d082-4020-b0de-94cbf0b1d2e8",
+      "name": "UploadFailed"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Call Log upload failed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        -700
+      ],
+      "id": "5ec26648-65c5-4ae7-90e4-ca89f00c8924",
+      "name": "callLogUpdateFailed"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        960,
+        -900
+      ],
+      "id": "2f392ec2-06dc-408e-a73a-3434623e8c28",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e08d8b30-2c16-4281-a581-2a7c07e634ed",
+              "leftValue": "={{ $json }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -800,
+        -650
+      ],
+      "id": "6d57e09a-6aa7-4889-b04d-84b50b2bcb5a",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1020,
+        -375
+      ],
+      "id": "b265213b-723c-43e5-aa32-4049aee25111",
+      "name": "No Operation, do nothing1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "702754b2-e828-4934-a2b9-5ae285d3ad48",
+              "leftValue": "={{ $json.body.event }}",
+              "rightValue": "call_analyzed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "2ef33533-aa9a-4996-bba5-2c830725e247",
+              "leftValue": "={{ $json.body.call.direction }}",
+              "rightValue": "inbound",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1240,
+        -475
+      ],
+      "id": "9eebef29-c9c0-4741-88e0-7f8fafe43f4b",
+      "name": "call_analyze_inbound"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "fullsunai",
+        "fileName": "={{ $('set_fileName').item.json.filename + \".wav\"}}",
+        "additionalFields": {
+          "acl": "publicRead",
+          "grantRead": true,
+          "parentFolderKey": "call_recordings"
+        }
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        460,
+        -740
+      ],
+      "id": "afd69132-a631-4a72-a94f-63b2a423d0a5",
+      "name": "{{connectionName}}",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "aws": {
+          "id": "25vTgaMtsUrojEdp",
+          "name": "{{connectionName}}"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "binaryPropertyName": "call_data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -140,
+        -700
+      ],
+      "id": "ef7a058f-0d1a-4940-a523-69328060c82e",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "fullsunai",
+        "fileName": "={{ $('set_fileName').item.json.jsonFile }}",
+        "binaryPropertyName": "call_data",
+        "additionalFields": {
+          "acl": "publicRead",
+          "grantRead": true,
+          "parentFolderKey": "call_recordings"
+        }
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        60,
+        -700
+      ],
+      "id": "6add6956-950f-43ed-bf3c-b44c1e9bb600",
+      "name": "uploadJSON",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "aws": {
+          "id": "25vTgaMtsUrojEdp",
+          "name": "{{connectionName}}"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "JSON Upload failed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        -440
+      ],
+      "id": "e2121d0f-{{redactedPhone}}-89f8-83bfff06b4dd",
+      "name": "UploadFailed1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ca30f06b-aa62-49ad-930d-73b59f920249",
+              "name": "filename",
+              "value": "={{ $node[\"searchContact\"].json[\"properties\"][\"firstname\"] }}-{{ $('post_call_log').item.json.body.call.call_id }}-recording",
+              "type": "string"
+            },
+            {
+              "id": "22b8806d-87da-4032-b7ca-b684be743080",
+              "name": "jsonFile",
+              "value": "={{\"recording-\"+ $('post_call_log').item.json.body.call.end_timestamp.toDateTime('ms').toISO()+\".json\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -580,
+        -700
+      ],
+      "id": "602998bd-{{redactedPhone}}-9cbb-189b67d362f0",
+      "name": "set_fileName"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e28116a3-1631-4da2-9f9c-1747c2499cee",
+              "name": "JSONfile",
+              "value": "={{ $('call_analyze_inbound').item.json.body.toJsonString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -360,
+        -700
+      ],
+      "id": "195371c6-ba9c-49cd-b70c-59a56f78f2cf",
+      "name": "setJSON"
+    }
+  ],
+  "connections": {
+    "post_call_log": {
+      "main": [
+        [
+          {
+            "node": "call_analyze_inbound",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "searchContact": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HubSpot": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "callLogUpdateFailed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "downloadRecording": {
+      "main": [
+        [
+          {
+            "node": "AWS S3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "set_fileName",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "call_analyze_inbound": {
+      "main": [
+        [
+          {
+            "node": "searchContact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS S3": {
+      "main": [
+        [
+          {
+            "node": "HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "UploadFailed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "uploadJSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "uploadJSON": {
+      "main": [
+        [
+          {
+            "node": "downloadRecording",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "UploadFailed1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "UploadFailed1": {
+      "main": [
+        [
+          {
+            "node": "downloadRecording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_fileName": {
+      "main": [
+        [
+          {
+            "node": "setJSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "setJSON": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "post_call_log": [
+      {
+        "headers": {
+          "host": "n8n.sgai.dev",
+          "user-agent": "PostmanRuntime/7.43.3",
+          "content-length": "61812",
+          "accept": "*/*",
+          "accept-encoding": "gzip, deflate, br",
+          "cache-control": "no-cache",
+          "content-type": "application/json",
+          "postman-token": "64ff7aec-219b-4d1a-9a59-4cfd596a6c6f",
+          "x-forwarded-for": "{{redactedPhone}}",
+          "x-forwarded-host": "n8n.sgai.dev",
+          "x-forwarded-proto": "https"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "event": "call_analyzed",
+          "call": {
+            "call_id": "call_e1ad38e34578b1521b9ad1507ca",
+            "call_type": "phone_call",
+            "agent_id": "agent_8c6879b9f8183a4e3bfba5b9ec",
+            "call_status": "ended",
+            "start_timestamp": {{redactedPhone}},
+            "end_timestamp": {{redactedPhone}},
+            "duration_ms": 85956,
+            "transcript": "Agent: Hi there!\nUser: Hi. I would like to reschedule an appointment\nAgent: Sure! Can I get your full name and email to help with that?\nUser: Full name is Priya. And email is priya at test dot com.\nAgent: Thanks, Priya! Do you remember the date and time of the appointment you'd like to reschedule?\nUser: I think it's on twenty eighth or twenty ninth.\nAgent: Your current appointment is on Tuesday, April 29, 2025, at 1:00 PM, and it's confirmed. Would you like to reschedule it?\nUser: Yes.\nAgent: Let me check \nAgent: the next \nAgent: available slots for you.\nAgent: The latest available slots are on Tuesday, April 29th, at 12:30 PM or 1:30 PM. Which time works best for you?\nUser: I would like a three PM.\nAgent: Let me check the \nAgent: next available slots for \nAgent: you.\nAgent: The available slots are on Tuesday, April 29th, at 2:30 PM or 3:00 PM. Please choose one of these times.\nUser: Yeah. Three PM is good.\nAgent: Let me reschedule it for \nAgent: you. \nAgent: Your appointment has been successfully rescheduled to Tuesday, April 29th, at 3:00 PM. Let me know if you need anything else!\nUser: Okay. Thank you.\nAgent: Your appointment has been successfully rescheduled to Tuesday, April 29th, at 3:00 PM. Let me know if there's anything else \n",
+            "transcript_object": [
+              {
+                "role": "agent",
+                "content": "Hi there!",
+                "words": [
+                  {
+                    "word": "Hi ",
+                    "start": 0.237,
+                    "end": 0.423
+                  },
+                  {
+                    "word": "there!",
+                    "start": 0.423,
+                    "end": 0.945
+                  }
+                ],
+                "metadata": {
+                  "response_id": 0
+                }
+              },
+              {
+                "role": "user",
+                "content": "Hi. I would like to reschedule an appointment",
+                "words": [
+                  {
+                    "word": "Hi. ",
+                    "start": {{redactedPhone}},
+                    "end": 3.063
+                  },
+                  {
+                    "word": "I ",
+                    "start": 3.063,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "would ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "like ",
+                    "start": {{redactedPhone}},
+                    "end": 3.623
+                  },
+                  {
+                    "word": "to ",
+                    "start": 3.623,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "reschedule ",
+                    "start": {{redactedPhone}},
+                    "end": 4.263
+                  },
+                  {
+                    "word": "an ",
+                    "start": 4.263,
+                    "end": 4.503
+                  },
+                  {
+                    "word": "appointment",
+                    "start": 4.503,
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "agent",
+                "content": "Sure! Can I get your full name and email to help with that?",
+                "words": [
+                  {
+                    "word": "Sure!",
+                    "start": 6.112,
+                    "end": 6.577
+                  },
+                  {
+                    "word": " Can ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "I ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "get ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "your ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "full ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "name ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "and ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "email ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "to ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "help ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "with ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "that?",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "response_id": 2
+                }
+              },
+              {
+                "role": "user",
+                "content": "Full name is Priya. And email is priya at test dot com.",
+                "words": [
+                  {
+                    "word": "Full ",
+                    "start": {{redactedPhone}},
+                    "end": 11.363
+                  },
+                  {
+                    "word": "name ",
+                    "start": 11.363,
+                    "end": 11.603
+                  },
+                  {
+                    "word": "is ",
+                    "start": 11.603,
+                    "end": 11.763
+                  },
+                  {
+                    "word": "Priya. ",
+                    "start": 11.763,
+                    "end": 12.243
+                  },
+                  {
+                    "word": "And ",
+                    "start": 12.763,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "email ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "is ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "priya ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "at ",
+                    "start": {{redactedPhone}},
+                    "end": 14.443
+                  },
+                  {
+                    "word": "test ",
+                    "start": 14.443,
+                    "end": 14.763
+                  },
+                  {
+                    "word": "dot ",
+                    "start": 14.763,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "com.",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "agent",
+                "content": "Thanks, Priya! Do you remember the date and time of the appointment you'd like to reschedule?",
+                "words": [
+                  {
+                    "word": "Thanks, ",
+                    "start": 16.706,
+                    "end": 17.055
+                  },
+                  {
+                    "word": "Priya!",
+                    "start": 17.055,
+                    "end": 17.565
+                  },
+                  {
+                    "word": " Do ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "remember ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "the ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "date ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "and ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "time ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "of ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "the ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "appointment ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you'd ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "like ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "to ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "reschedule?",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "response_id": 5
+                }
+              },
+              {
+                "role": "user",
+                "content": "I think it's on twenty eighth or twenty ninth.",
+                "words": [
+                  {
+                    "word": "I ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "think ",
+                    "start": {{redactedPhone}},
+                    "end": 23.363
+                  },
+                  {
+                    "word": "it's ",
+                    "start": 23.363,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "on ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "twenty ",
+                    "start": {{redactedPhone}},
+                    "end": 24.003
+                  },
+                  {
+                    "word": "eighth ",
+                    "start": 24.003,
+                    "end": 24.243
+                  },
+                  {
+                    "word": "or ",
+                    "start": 24.243,
+                    "end": 24.483
+                  },
+                  {
+                    "word": "twenty ",
+                    "start": 24.483,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "ninth.",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "agent",
+                "content": "Your current appointment is on Tuesday, April 29, 2025, at 1:00 PM, and it's confirmed. Would you like to reschedule it?",
+                "words": [
+                  {
+                    "word": "Your ",
+                    "start": 28.402,
+                    "end": 28.6
+                  },
+                  {
+                    "word": "current ",
+                    "start": 28.6,
+                    "end": 28.832
+                  },
+                  {
+                    "word": "appointment ",
+                    "start": 28.832,
+                    "end": 29.122
+                  },
+                  {
+                    "word": "is ",
+                    "start": 29.122,
+                    "end": 29.319
+                  },
+                  {
+                    "word": "on ",
+                    "start": 29.319,
+                    "end": 29.482
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 29.482,
+                    "end": 29.61
+                  },
+                  {
+                    "word": "April ",
+                    "start": 29.61,
+                    "end": 30.155
+                  },
+                  {
+                    "word": "29, ",
+                    "start": 30.155,
+                    "end": 30.434
+                  },
+                  {
+                    "word": "2025, ",
+                    "start": 30.434,
+                    "end": 30.689
+                  },
+                  {
+                    "word": "at ",
+                    "start": 30.689,
+                    "end": 31.026
+                  },
+                  {
+                    "word": "1:00 ",
+                    "start": 31.026,
+                    "end": 31.328
+                  },
+                  {
+                    "word": "PM, ",
+                    "start": 31.328,
+                    "end": 31.618
+                  },
+                  {
+                    "word": "and ",
+                    "start": 31.618,
+                    "end": 31.99
+                  },
+                  {
+                    "word": "it's ",
+                    "start": 31.99,
+                    "end": 32.152
+                  },
+                  {
+                    "word": "confirmed.",
+                    "start": 32.152,
+                    "end": 32.35
+                  },
+                  {
+                    "word": " Would ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "like ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "to ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "reschedule ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "it?",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "interrupt_id": 1
+                }
+              },
+              {
+                "role": "user",
+                "content": "Yes.",
+                "words": [
+                  {
+                    "word": "Yes.",
+                    "start": 37.093,
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "agent",
+                "content": "Let me check ",
+                "words": [
+                  {
+                    "word": "Let ",
+                    "start": 38.258,
+                    "end": 38.421
+                  },
+                  {
+                    "word": "me ",
+                    "start": 38.421,
+                    "end": 38.514
+                  },
+                  {
+                    "word": "check ",
+                    "start": 38.514,
+                    "end": 38.746
+                  }
+                ],
+                "metadata": {
+                  "response_id": 7
+                }
+              },
+              {
+                "role": "agent",
+                "content": "the next ",
+                "words": [
+                  {
+                    "word": "the ",
+                    "start": 38.746,
+                    "end": 38.839
+                  },
+                  {
+                    "word": "next ",
+                    "start": 38.839,
+                    "end": 39.024
+                  }
+                ],
+                "metadata": {
+                  "response_id": 7
+                }
+              },
+              {
+                "role": "agent",
+                "content": "available slots for you.",
+                "words": [
+                  {
+                    "word": "available ",
+                    "start": 39.024,
+                    "end": 39.059
+                  },
+                  {
+                    "word": "slots ",
+                    "start": 39.059,
+                    "end": 39.477
+                  },
+                  {
+                    "word": "for ",
+                    "start": 39.477,
+                    "end": 39.79
+                  },
+                  {
+                    "word": "you.",
+                    "start": 39.79,
+                    "end": 39.941
+                  }
+                ],
+                "metadata": {
+                  "response_id": 7
+                }
+              },
+              {
+                "role": "agent",
+                "content": "The latest available slots are on Tuesday, April 29th, at 12:30 PM or 1:30 PM. Which time works best for you?",
+                "words": [
+                  {
+                    "word": "The ",
+                    "start": 41.411,
+                    "end": 41.574
+                  },
+                  {
+                    "word": "latest ",
+                    "start": 41.574,
+                    "end": 41.864
+                  },
+                  {
+                    "word": "available ",
+                    "start": 41.864,
+                    "end": 42.27
+                  },
+                  {
+                    "word": "slots ",
+                    "start": 42.27,
+                    "end": 42.583
+                  },
+                  {
+                    "word": "are ",
+                    "start": 42.583,
+                    "end": 42.7
+                  },
+                  {
+                    "word": "on ",
+                    "start": 42.7,
+                    "end": 42.827
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 42.827,
+                    "end": 43.361
+                  },
+                  {
+                    "word": "April ",
+                    "start": 43.361,
+                    "end": 43.64
+                  },
+                  {
+                    "word": "29th, ",
+                    "start": 43.64,
+                    "end": 43.872
+                  },
+                  {
+                    "word": "at ",
+                    "start": 43.872,
+                    "end": 44.104
+                  },
+                  {
+                    "word": "12:30 ",
+                    "start": 44.104,
+                    "end": 44.209
+                  },
+                  {
+                    "word": "PM ",
+                    "start": 44.209,
+                    "end": 44.488
+                  },
+                  {
+                    "word": "or ",
+                    "start": 44.488,
+                    "end": 44.778
+                  },
+                  {
+                    "word": "1:30 ",
+                    "start": 44.778,
+                    "end": 45.091
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 45.091,
+                    "end": 45.242
+                  },
+                  {
+                    "word": " Which ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "time ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "works ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "best ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "for ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you?",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "interrupt_id": 2
+                }
+              },
+              {
+                "role": "user",
+                "content": "I would like a three PM.",
+                "words": [
+                  {
+                    "word": "I ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "would ",
+                    "start": {{redactedPhone}},
+                    "end": 51.063
+                  },
+                  {
+                    "word": "like ",
+                    "start": 51.063,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "a ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "three ",
+                    "start": {{redactedPhone}},
+                    "end": 51.703
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 51.703,
+                    "end": 52.103
+                  }
+                ]
+              },
+              {
+                "role": "agent",
+                "content": "Let me check the ",
+                "words": [
+                  {
+                    "word": "Let ",
+                    "start": 52.706,
+                    "end": 52.869
+                  },
+                  {
+                    "word": "me ",
+                    "start": 52.869,
+                    "end": 52.962
+                  },
+                  {
+                    "word": "check ",
+                    "start": 52.962,
+                    "end": 53.182
+                  },
+                  {
+                    "word": "the ",
+                    "start": 53.182,
+                    "end": 53.287
+                  }
+                ],
+                "metadata": {
+                  "response_id": 9
+                }
+              },
+              {
+                "role": "agent",
+                "content": "next available slots for ",
+                "words": [
+                  {
+                    "word": "next ",
+                    "start": 53.287,
+                    "end": 53.472
+                  },
+                  {
+                    "word": "available ",
+                    "start": 53.472,
+                    "end": 53.495
+                  },
+                  {
+                    "word": "slots ",
+                    "start": 53.495,
+                    "end": 53.913
+                  },
+                  {
+                    "word": "for ",
+                    "start": 53.913,
+                    "end": 54.215
+                  }
+                ],
+                "metadata": {
+                  "response_id": 9
+                }
+              },
+              {
+                "role": "agent",
+                "content": "you.",
+                "words": [
+                  {
+                    "word": "you.",
+                    "start": 54.215,
+                    "end": 54.354
+                  }
+                ],
+                "metadata": {
+                  "response_id": 9
+                }
+              },
+              {
+                "role": "agent",
+                "content": "The available slots are on Tuesday, April 29th, at 2:30 PM or 3:00 PM. Please choose one of these times.",
+                "words": [
+                  {
+                    "word": "The ",
+                    "start": 55.928,
+                    "end": 56.114
+                  },
+                  {
+                    "word": "available ",
+                    "start": 56.114,
+                    "end": 56.532
+                  },
+                  {
+                    "word": "slots ",
+                    "start": 56.532,
+                    "end": 56.903
+                  },
+                  {
+                    "word": "are ",
+                    "start": 56.903,
+                    "end": 57.135
+                  },
+                  {
+                    "word": "on ",
+                    "start": 57.135,
+                    "end": 57.286
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 57.286,
+                    "end": 57.739
+                  },
+                  {
+                    "word": "April ",
+                    "start": 57.739,
+                    "end": 58.006
+                  },
+                  {
+                    "word": "29th, ",
+                    "start": 58.006,
+                    "end": 58.261
+                  },
+                  {
+                    "word": "at ",
+                    "start": 58.261,
+                    "end": 58.946
+                  },
+                  {
+                    "word": "2:30 ",
+                    "start": 58.946,
+                    "end": 59.213
+                  },
+                  {
+                    "word": "PM ",
+                    "start": 59.213,
+                    "end": 59.434
+                  },
+                  {
+                    "word": "or ",
+                    "start": 59.434,
+                    "end": 59.782
+                  },
+                  {
+                    "word": "3:00 ",
+                    "start": 59.782,
+                    "end": 60.235
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 60.235,
+                    "end": 60.374
+                  },
+                  {
+                    "word": " Please ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "choose ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "one ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "of ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "these ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "times.",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "interrupt_id": 3
+                }
+              },
+              {
+                "role": "user",
+                "content": "Yeah. Three PM is good.",
+                "words": [
+                  {
+                    "word": "Yeah. ",
+                    "start": {{redactedPhone}},
+                    "end": 64.943
+                  },
+                  {
+                    "word": "Three ",
+                    "start": 64.943,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "PM ",
+                    "start": {{redactedPhone}},
+                    "end": 65.503
+                  },
+                  {
+                    "word": "is ",
+                    "start": 65.503,
+                    "end": 65.663
+                  },
+                  {
+                    "word": "good.",
+                    "start": 65.663,
+                    "end": 65.823
+                  }
+                ]
+              },
+              {
+                "role": "agent",
+                "content": "Let me reschedule it for ",
+                "words": [
+                  {
+                    "word": "Let ",
+                    "start": 66.64,
+                    "end": 66.826
+                  },
+                  {
+                    "word": "me ",
+                    "start": 66.826,
+                    "end": 66.93
+                  },
+                  {
+                    "word": "reschedule ",
+                    "start": 66.93,
+                    "end": 67.325
+                  },
+                  {
+                    "word": "it ",
+                    "start": 67.325,
+                    "end": 67.43
+                  },
+                  {
+                    "word": "for ",
+                    "start": 67.43,
+                    "end": 67.581
+                  }
+                ],
+                "metadata": {
+                  "response_id": 11
+                }
+              },
+              {
+                "role": "agent",
+                "content": "you. ",
+                "words": [
+                  {
+                    "word": "you. ",
+                    "start": 67.581,
+                    "end": 67.917
+                  }
+                ],
+                "metadata": {
+                  "response_id": 11
+                }
+              },
+              {
+                "role": "agent",
+                "content": "Your appointment has been successfully rescheduled to Tuesday, April 29th, at 3:00 PM. Let me know if you need anything else!",
+                "words": [
+                  {
+                    "word": "Your ",
+                    "start": 69.805,
+                    "end": 70.003
+                  },
+                  {
+                    "word": "appointment ",
+                    "start": 70.003,
+                    "end": 70.397
+                  },
+                  {
+                    "word": "has ",
+                    "start": 70.397,
+                    "end": 70.525
+                  },
+                  {
+                    "word": "been ",
+                    "start": 70.525,
+                    "end": 70.722
+                  },
+                  {
+                    "word": "successfully ",
+                    "start": 70.722,
+                    "end": 71.361
+                  },
+                  {
+                    "word": "rescheduled ",
+                    "start": 71.361,
+                    "end": 71.941
+                  },
+                  {
+                    "word": "to ",
+                    "start": 71.941,
+                    "end": 72.081
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 72.081,
+                    "end": 72.487
+                  },
+                  {
+                    "word": "April ",
+                    "start": 72.487,
+                    "end": 72.801
+                  },
+                  {
+                    "word": "29th, ",
+                    "start": 72.801,
+                    "end": 73.091
+                  },
+                  {
+                    "word": "at ",
+                    "start": 73.091,
+                    "end": 73.474
+                  },
+                  {
+                    "word": "3:00 ",
+                    "start": 73.474,
+                    "end": 73.671
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 73.671,
+                    "end": 73.95
+                  },
+                  {
+                    "word": " Let ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "me ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "know ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "if ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "need ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "anything ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "else!",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "interrupt_id": 4
+                }
+              },
+              {
+                "role": "user",
+                "content": "Okay. Thank you.",
+                "words": [
+                  {
+                    "word": "Okay. ",
+                    "start": {{redactedPhone}},
+                    "end": 78.523
+                  },
+                  {
+                    "word": "Thank ",
+                    "start": 78.523,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you.",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "agent",
+                "content": "Your appointment has been successfully rescheduled to Tuesday, April 29th, at 3:00 PM. Let me know if there's anything else ",
+                "words": [
+                  {
+                    "word": "Your ",
+                    "start": 80.183,
+                    "end": 80.357
+                  },
+                  {
+                    "word": "appointment ",
+                    "start": 80.357,
+                    "end": 80.717
+                  },
+                  {
+                    "word": "has ",
+                    "start": 80.717,
+                    "end": 80.857
+                  },
+                  {
+                    "word": "been ",
+                    "start": 80.857,
+                    "end": 81.043
+                  },
+                  {
+                    "word": "successfully ",
+                    "start": 81.043,
+                    "end": 81.623
+                  },
+                  {
+                    "word": "rescheduled ",
+                    "start": 81.623,
+                    "end": 82.192
+                  },
+                  {
+                    "word": "to ",
+                    "start": 82.192,
+                    "end": 82.297
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 82.297,
+                    "end": 82.749
+                  },
+                  {
+                    "word": "April ",
+                    "start": 82.749,
+                    "end": 83.016
+                  },
+                  {
+                    "word": "29th, ",
+                    "start": 83.016,
+                    "end": 83.283
+                  },
+                  {
+                    "word": "at ",
+                    "start": 83.283,
+                    "end": 83.551
+                  },
+                  {
+                    "word": "3:00 ",
+                    "start": 83.551,
+                    "end": 83.667
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 83.667,
+                    "end": 83.945
+                  },
+                  {
+                    "word": " Let ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "me ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "know ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "if ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "there's ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "anything ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "else ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "response_id": 12
+                }
+              }
+            ],
+            "transcript_with_tool_calls": [
+              {
+                "role": "node_transition",
+                "former_node_id": "begin",
+                "former_node_name": "begin",
+                "new_node_id": "start-node-{{redactedPhone}}",
+                "new_node_name": "Welcome Node"
+              },
+              {
+                "role": "agent",
+                "content": "Hi there!",
+                "words": [
+                  {
+                    "word": "Hi ",
+                    "start": 0.237,
+                    "end": 0.423
+                  },
+                  {
+                    "word": "there!",
+                    "start": 0.423,
+                    "end": 0.945
+                  }
+                ],
+                "metadata": {
+                  "response_id": 0
+                }
+              },
+              {
+                "role": "user",
+                "content": "Hi. I would like to reschedule an appointment",
+                "words": [
+                  {
+                    "word": "Hi. ",
+                    "start": {{redactedPhone}},
+                    "end": 3.063
+                  },
+                  {
+                    "word": "I ",
+                    "start": 3.063,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "would ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "like ",
+                    "start": {{redactedPhone}},
+                    "end": 3.623
+                  },
+                  {
+                    "word": "to ",
+                    "start": 3.623,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "reschedule ",
+                    "start": {{redactedPhone}},
+                    "end": 4.263
+                  },
+                  {
+                    "word": "an ",
+                    "start": 4.263,
+                    "end": 4.503
+                  },
+                  {
+                    "word": "appointment",
+                    "start": 4.503,
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "start-node-{{redactedPhone}}",
+                "former_node_name": "Welcome Node",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "Reschedule"
+              },
+              {
+                "role": "agent",
+                "content": "Sure! Can I get your full name and email to help with that?",
+                "words": [
+                  {
+                    "word": "Sure!",
+                    "start": 6.112,
+                    "end": 6.577
+                  },
+                  {
+                    "word": " Can ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "I ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "get ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "your ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "full ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "name ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "and ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "email ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "to ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "help ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "with ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "that?",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "response_id": 2
+                }
+              },
+              {
+                "role": "user",
+                "content": "Full name is Priya. And email is priya at test dot com.",
+                "words": [
+                  {
+                    "word": "Full ",
+                    "start": {{redactedPhone}},
+                    "end": 11.363
+                  },
+                  {
+                    "word": "name ",
+                    "start": 11.363,
+                    "end": 11.603
+                  },
+                  {
+                    "word": "is ",
+                    "start": 11.603,
+                    "end": 11.763
+                  },
+                  {
+                    "word": "Priya. ",
+                    "start": 11.763,
+                    "end": 12.243
+                  },
+                  {
+                    "word": "And ",
+                    "start": 12.763,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "email ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "is ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "priya ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "at ",
+                    "start": {{redactedPhone}},
+                    "end": 14.443
+                  },
+                  {
+                    "word": "test ",
+                    "start": 14.443,
+                    "end": 14.763
+                  },
+                  {
+                    "word": "dot ",
+                    "start": 14.763,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "com.",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "Reschedule",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "collect current appointment"
+              },
+              {
+                "role": "agent",
+                "content": "Thanks, Priya! Do you remember the date and time of the appointment you'd like to reschedule?",
+                "words": [
+                  {
+                    "word": "Thanks, ",
+                    "start": 16.706,
+                    "end": 17.055
+                  },
+                  {
+                    "word": "Priya!",
+                    "start": 17.055,
+                    "end": 17.565
+                  },
+                  {
+                    "word": " Do ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "remember ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "the ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "date ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "and ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "time ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "of ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "the ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "appointment ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you'd ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "like ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "to ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "reschedule?",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "response_id": 5
+                }
+              },
+              {
+                "role": "user",
+                "content": "I think it's on twenty eighth or twenty ninth.",
+                "words": [
+                  {
+                    "word": "I ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "think ",
+                    "start": {{redactedPhone}},
+                    "end": 23.363
+                  },
+                  {
+                    "word": "it's ",
+                    "start": 23.363,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "on ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "twenty ",
+                    "start": {{redactedPhone}},
+                    "end": 24.003
+                  },
+                  {
+                    "word": "eighth ",
+                    "start": 24.003,
+                    "end": 24.243
+                  },
+                  {
+                    "word": "or ",
+                    "start": 24.243,
+                    "end": 24.483
+                  },
+                  {
+                    "word": "twenty ",
+                    "start": 24.483,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "ninth.",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "collect current appointment",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "Get my Cal.com booking"
+              },
+              {
+                "role": "tool_call_invocation",
+                "tool_call_id": "tool_call_d1d784",
+                "name": "fullsun_get_my_Cal_appt",
+                "arguments": "{\"user_email\":\"{{redactedEmail}}\",\"existing_appointment_datetime\":\"2025-04-28T00:00:00Z\",\"user_name\":\"Priya\"}"
+              },
+              {
+                "role": "tool_call_result",
+                "tool_call_id": "tool_call_d1d784",
+                "content": "{\"upcomingAppointment\":{\"appointment_uid\":\"sHLz6ZymnjUDEHFGDWLzjT\",\"eventTypeId\":\"2157284\",\"appointment_date\":\"Tuesday, April 29, 2025\",\"appointment_startTime\":\"1:00 PM\",\"appointment_status\":\"accepted\",\"totalUpcomingAppointments\":\"1\",\"userTimeZone\":\"America/Chicago\",\"appointment_DateTime_UTC\":\"2025-04-29T18:00:00.000Z\"}}"
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "Get my Cal.com booking",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "update user current appointment time"
+              },
+              {
+                "role": "agent",
+                "content": "Your current appointment is on Tuesday, April 29, 2025, at 1:00 PM, and it's confirmed. Would you like to reschedule it?",
+                "words": [
+                  {
+                    "word": "Your ",
+                    "start": 28.402,
+                    "end": 28.6
+                  },
+                  {
+                    "word": "current ",
+                    "start": 28.6,
+                    "end": 28.832
+                  },
+                  {
+                    "word": "appointment ",
+                    "start": 28.832,
+                    "end": 29.122
+                  },
+                  {
+                    "word": "is ",
+                    "start": 29.122,
+                    "end": 29.319
+                  },
+                  {
+                    "word": "on ",
+                    "start": 29.319,
+                    "end": 29.482
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 29.482,
+                    "end": 29.61
+                  },
+                  {
+                    "word": "April ",
+                    "start": 29.61,
+                    "end": 30.155
+                  },
+                  {
+                    "word": "29, ",
+                    "start": 30.155,
+                    "end": 30.434
+                  },
+                  {
+                    "word": "2025, ",
+                    "start": 30.434,
+                    "end": 30.689
+                  },
+                  {
+                    "word": "at ",
+                    "start": 30.689,
+                    "end": 31.026
+                  },
+                  {
+                    "word": "1:00 ",
+                    "start": 31.026,
+                    "end": 31.328
+                  },
+                  {
+                    "word": "PM, ",
+                    "start": 31.328,
+                    "end": 31.618
+                  },
+                  {
+                    "word": "and ",
+                    "start": 31.618,
+                    "end": 31.99
+                  },
+                  {
+                    "word": "it's ",
+                    "start": 31.99,
+                    "end": 32.152
+                  },
+                  {
+                    "word": "confirmed.",
+                    "start": 32.152,
+                    "end": 32.35
+                  },
+                  {
+                    "word": " Would ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "like ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "to ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "reschedule ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "it?",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "interrupt_id": 1
+                }
+              },
+              {
+                "role": "user",
+                "content": "Yes.",
+                "words": [
+                  {
+                    "word": "Yes.",
+                    "start": 37.093,
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "update user current appointment time",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "Check Cal.com available slots"
+              },
+              {
+                "role": "agent",
+                "content": "Let me check ",
+                "words": [
+                  {
+                    "word": "Let ",
+                    "start": 38.258,
+                    "end": 38.421
+                  },
+                  {
+                    "word": "me ",
+                    "start": 38.421,
+                    "end": 38.514
+                  },
+                  {
+                    "word": "check ",
+                    "start": 38.514,
+                    "end": 38.746
+                  }
+                ],
+                "metadata": {
+                  "response_id": 7
+                }
+              },
+              {
+                "role": "tool_call_invocation",
+                "tool_call_id": "tool_call_a39ba5",
+                "name": "check_available_slots_cal",
+                "arguments": "{\"appointment_datetime\":\"2025-04-29T18:00:00.000Z\",\"user_timezone\":\"America/Chicago\"}"
+              },
+              {
+                "role": "agent",
+                "content": "the next ",
+                "words": [
+                  {
+                    "word": "the ",
+                    "start": 38.746,
+                    "end": 38.839
+                  },
+                  {
+                    "word": "next ",
+                    "start": 38.839,
+                    "end": 39.024
+                  }
+                ],
+                "metadata": {
+                  "response_id": 7
+                }
+              },
+              {
+                "role": "tool_call_result",
+                "tool_call_id": "tool_call_a39ba5",
+                "content": "Nearest Available Slots are:\n1. 2025-04-29T12:30:{{redactedPhone}}:00\n2. 2025-04-29T13:30:{{redactedPhone}}:00\n"
+              },
+              {
+                "role": "agent",
+                "content": "available slots for you.",
+                "words": [
+                  {
+                    "word": "available ",
+                    "start": 39.024,
+                    "end": 39.059
+                  },
+                  {
+                    "word": "slots ",
+                    "start": 39.059,
+                    "end": 39.477
+                  },
+                  {
+                    "word": "for ",
+                    "start": 39.477,
+                    "end": 39.79
+                  },
+                  {
+                    "word": "you.",
+                    "start": 39.79,
+                    "end": 39.941
+                  }
+                ],
+                "metadata": {
+                  "response_id": 7
+                }
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "Check Cal.com available slots",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "Conversation"
+              },
+              {
+                "role": "agent",
+                "content": "The latest available slots are on Tuesday, April 29th, at 12:30 PM or 1:30 PM. Which time works best for you?",
+                "words": [
+                  {
+                    "word": "The ",
+                    "start": 41.411,
+                    "end": 41.574
+                  },
+                  {
+                    "word": "latest ",
+                    "start": 41.574,
+                    "end": 41.864
+                  },
+                  {
+                    "word": "available ",
+                    "start": 41.864,
+                    "end": 42.27
+                  },
+                  {
+                    "word": "slots ",
+                    "start": 42.27,
+                    "end": 42.583
+                  },
+                  {
+                    "word": "are ",
+                    "start": 42.583,
+                    "end": 42.7
+                  },
+                  {
+                    "word": "on ",
+                    "start": 42.7,
+                    "end": 42.827
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 42.827,
+                    "end": 43.361
+                  },
+                  {
+                    "word": "April ",
+                    "start": 43.361,
+                    "end": 43.64
+                  },
+                  {
+                    "word": "29th, ",
+                    "start": 43.64,
+                    "end": 43.872
+                  },
+                  {
+                    "word": "at ",
+                    "start": 43.872,
+                    "end": 44.104
+                  },
+                  {
+                    "word": "12:30 ",
+                    "start": 44.104,
+                    "end": 44.209
+                  },
+                  {
+                    "word": "PM ",
+                    "start": 44.209,
+                    "end": 44.488
+                  },
+                  {
+                    "word": "or ",
+                    "start": 44.488,
+                    "end": 44.778
+                  },
+                  {
+                    "word": "1:30 ",
+                    "start": 44.778,
+                    "end": 45.091
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 45.091,
+                    "end": 45.242
+                  },
+                  {
+                    "word": " Which ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "time ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "works ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "best ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "for ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you?",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "interrupt_id": 2
+                }
+              },
+              {
+                "role": "user",
+                "content": "I would like a three PM.",
+                "words": [
+                  {
+                    "word": "I ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "would ",
+                    "start": {{redactedPhone}},
+                    "end": 51.063
+                  },
+                  {
+                    "word": "like ",
+                    "start": 51.063,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "a ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "three ",
+                    "start": {{redactedPhone}},
+                    "end": 51.703
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 51.703,
+                    "end": 52.103
+                  }
+                ]
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "Conversation",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "Check Cal.com available slots"
+              },
+              {
+                "role": "agent",
+                "content": "Let me check the ",
+                "words": [
+                  {
+                    "word": "Let ",
+                    "start": 52.706,
+                    "end": 52.869
+                  },
+                  {
+                    "word": "me ",
+                    "start": 52.869,
+                    "end": 52.962
+                  },
+                  {
+                    "word": "check ",
+                    "start": 52.962,
+                    "end": 53.182
+                  },
+                  {
+                    "word": "the ",
+                    "start": 53.182,
+                    "end": 53.287
+                  }
+                ],
+                "metadata": {
+                  "response_id": 9
+                }
+              },
+              {
+                "role": "tool_call_invocation",
+                "tool_call_id": "tool_call_c87a29",
+                "name": "check_available_slots_cal",
+                "arguments": "{\"appointment_datetime\":\"2025-04-29T20:00:00.000Z\",\"user_timezone\":\"America/Chicago\"}"
+              },
+              {
+                "role": "agent",
+                "content": "next available slots for ",
+                "words": [
+                  {
+                    "word": "next ",
+                    "start": 53.287,
+                    "end": 53.472
+                  },
+                  {
+                    "word": "available ",
+                    "start": 53.472,
+                    "end": 53.495
+                  },
+                  {
+                    "word": "slots ",
+                    "start": 53.495,
+                    "end": 53.913
+                  },
+                  {
+                    "word": "for ",
+                    "start": 53.913,
+                    "end": 54.215
+                  }
+                ],
+                "metadata": {
+                  "response_id": 9
+                }
+              },
+              {
+                "role": "tool_call_result",
+                "tool_call_id": "tool_call_c87a29",
+                "content": "Nearest Available Slots are :\n1. \"2025-04-29T14:30:{{redactedPhone}}:00\"\n2. \"2025-04-29T15:00:{{redactedPhone}}:00\""
+              },
+              {
+                "role": "agent",
+                "content": "you.",
+                "words": [
+                  {
+                    "word": "you.",
+                    "start": 54.215,
+                    "end": 54.354
+                  }
+                ],
+                "metadata": {
+                  "response_id": 9
+                }
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "Check Cal.com available slots",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "Conversation"
+              },
+              {
+                "role": "agent",
+                "content": "The available slots are on Tuesday, April 29th, at 2:30 PM or 3:00 PM. Please choose one of these times.",
+                "words": [
+                  {
+                    "word": "The ",
+                    "start": 55.928,
+                    "end": 56.114
+                  },
+                  {
+                    "word": "available ",
+                    "start": 56.114,
+                    "end": 56.532
+                  },
+                  {
+                    "word": "slots ",
+                    "start": 56.532,
+                    "end": 56.903
+                  },
+                  {
+                    "word": "are ",
+                    "start": 56.903,
+                    "end": 57.135
+                  },
+                  {
+                    "word": "on ",
+                    "start": 57.135,
+                    "end": 57.286
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 57.286,
+                    "end": 57.739
+                  },
+                  {
+                    "word": "April ",
+                    "start": 57.739,
+                    "end": 58.006
+                  },
+                  {
+                    "word": "29th, ",
+                    "start": 58.006,
+                    "end": 58.261
+                  },
+                  {
+                    "word": "at ",
+                    "start": 58.261,
+                    "end": 58.946
+                  },
+                  {
+                    "word": "2:30 ",
+                    "start": 58.946,
+                    "end": 59.213
+                  },
+                  {
+                    "word": "PM ",
+                    "start": 59.213,
+                    "end": 59.434
+                  },
+                  {
+                    "word": "or ",
+                    "start": 59.434,
+                    "end": 59.782
+                  },
+                  {
+                    "word": "3:00 ",
+                    "start": 59.782,
+                    "end": 60.235
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 60.235,
+                    "end": 60.374
+                  },
+                  {
+                    "word": " Please ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "choose ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "one ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "of ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "these ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "times.",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "interrupt_id": 3
+                }
+              },
+              {
+                "role": "user",
+                "content": "Yeah. Three PM is good.",
+                "words": [
+                  {
+                    "word": "Yeah. ",
+                    "start": {{redactedPhone}},
+                    "end": 64.943
+                  },
+                  {
+                    "word": "Three ",
+                    "start": 64.943,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "PM ",
+                    "start": {{redactedPhone}},
+                    "end": 65.503
+                  },
+                  {
+                    "word": "is ",
+                    "start": 65.503,
+                    "end": 65.663
+                  },
+                  {
+                    "word": "good.",
+                    "start": 65.663,
+                    "end": 65.823
+                  }
+                ]
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "Conversation",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "Reschedule Cal.com  booking"
+              },
+              {
+                "role": "agent",
+                "content": "Let me reschedule it for ",
+                "words": [
+                  {
+                    "word": "Let ",
+                    "start": 66.64,
+                    "end": 66.826
+                  },
+                  {
+                    "word": "me ",
+                    "start": 66.826,
+                    "end": 66.93
+                  },
+                  {
+                    "word": "reschedule ",
+                    "start": 66.93,
+                    "end": 67.325
+                  },
+                  {
+                    "word": "it ",
+                    "start": 67.325,
+                    "end": 67.43
+                  },
+                  {
+                    "word": "for ",
+                    "start": 67.43,
+                    "end": 67.581
+                  }
+                ],
+                "metadata": {
+                  "response_id": 11
+                }
+              },
+              {
+                "role": "tool_call_invocation",
+                "tool_call_id": "tool_call_b72d5f",
+                "name": "fullsun_reschedule_appt_cal",
+                "arguments": "{\"user_email\":\"{{redactedEmail}}\",\"reschedule_appointment_datetime\":\"2025-04-29T20:00:00.000Z\",\"user_name\":\"Priya\",\"user_phone\":\"\",\"existing_appointment_datetime\":\"2025-04-29T18:00:00.000Z\",\"appointment_uid\":\"sHLz6ZymnjUDEHFGDWLzjT\",\"user_timezone\":\"America/Chicago\"}"
+              },
+              {
+                "role": "agent",
+                "content": "you. ",
+                "words": [
+                  {
+                    "word": "you. ",
+                    "start": 67.581,
+                    "end": 67.917
+                  }
+                ],
+                "metadata": {
+                  "response_id": 11
+                }
+              },
+              {
+                "role": "tool_call_result",
+                "tool_call_id": "tool_call_b72d5f",
+                "content": "Appointment rescheduled successfully. {\nappointmentDetails:\n{\n\"appoinmentStatus\":\"accepted\",\n \"appointmentStartTime\": \"2025-04-29T13:00:{{redactedPhone}}:00\"\n}}"
+              },
+              {
+                "role": "node_transition",
+                "former_node_id": "node-{{redactedPhone}}",
+                "former_node_name": "Reschedule Cal.com  booking",
+                "new_node_id": "node-{{redactedPhone}}",
+                "new_node_name": "reschedule successful"
+              },
+              {
+                "role": "agent",
+                "content": "Your appointment has been successfully rescheduled to Tuesday, April 29th, at 3:00 PM. Let me know if you need anything else!",
+                "words": [
+                  {
+                    "word": "Your ",
+                    "start": 69.805,
+                    "end": 70.003
+                  },
+                  {
+                    "word": "appointment ",
+                    "start": 70.003,
+                    "end": 70.397
+                  },
+                  {
+                    "word": "has ",
+                    "start": 70.397,
+                    "end": 70.525
+                  },
+                  {
+                    "word": "been ",
+                    "start": 70.525,
+                    "end": 70.722
+                  },
+                  {
+                    "word": "successfully ",
+                    "start": 70.722,
+                    "end": 71.361
+                  },
+                  {
+                    "word": "rescheduled ",
+                    "start": 71.361,
+                    "end": 71.941
+                  },
+                  {
+                    "word": "to ",
+                    "start": 71.941,
+                    "end": 72.081
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 72.081,
+                    "end": 72.487
+                  },
+                  {
+                    "word": "April ",
+                    "start": 72.487,
+                    "end": 72.801
+                  },
+                  {
+                    "word": "29th, ",
+                    "start": 72.801,
+                    "end": 73.091
+                  },
+                  {
+                    "word": "at ",
+                    "start": 73.091,
+                    "end": 73.474
+                  },
+                  {
+                    "word": "3:00 ",
+                    "start": 73.474,
+                    "end": 73.671
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 73.671,
+                    "end": 73.95
+                  },
+                  {
+                    "word": " Let ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "me ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "know ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "if ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "need ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "anything ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "else!",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "interrupt_id": 4
+                }
+              },
+              {
+                "role": "user",
+                "content": "Okay. Thank you.",
+                "words": [
+                  {
+                    "word": "Okay. ",
+                    "start": {{redactedPhone}},
+                    "end": 78.523
+                  },
+                  {
+                    "word": "Thank ",
+                    "start": 78.523,
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "you.",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ]
+              },
+              {
+                "role": "agent",
+                "content": "Your appointment has been successfully rescheduled to Tuesday, April 29th, at 3:00 PM. Let me know if there's anything else ",
+                "words": [
+                  {
+                    "word": "Your ",
+                    "start": 80.183,
+                    "end": 80.357
+                  },
+                  {
+                    "word": "appointment ",
+                    "start": 80.357,
+                    "end": 80.717
+                  },
+                  {
+                    "word": "has ",
+                    "start": 80.717,
+                    "end": 80.857
+                  },
+                  {
+                    "word": "been ",
+                    "start": 80.857,
+                    "end": 81.043
+                  },
+                  {
+                    "word": "successfully ",
+                    "start": 81.043,
+                    "end": 81.623
+                  },
+                  {
+                    "word": "rescheduled ",
+                    "start": 81.623,
+                    "end": 82.192
+                  },
+                  {
+                    "word": "to ",
+                    "start": 82.192,
+                    "end": 82.297
+                  },
+                  {
+                    "word": "Tuesday, ",
+                    "start": 82.297,
+                    "end": 82.749
+                  },
+                  {
+                    "word": "April ",
+                    "start": 82.749,
+                    "end": 83.016
+                  },
+                  {
+                    "word": "29th, ",
+                    "start": 83.016,
+                    "end": 83.283
+                  },
+                  {
+                    "word": "at ",
+                    "start": 83.283,
+                    "end": 83.551
+                  },
+                  {
+                    "word": "3:00 ",
+                    "start": 83.551,
+                    "end": 83.667
+                  },
+                  {
+                    "word": "PM.",
+                    "start": 83.667,
+                    "end": 83.945
+                  },
+                  {
+                    "word": " Let ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "me ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "know ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "if ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "there's ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "anything ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  },
+                  {
+                    "word": "else ",
+                    "start": {{redactedPhone}},
+                    "end": {{redactedPhone}}
+                  }
+                ],
+                "metadata": {
+                  "response_id": 12
+                }
+              }
+            ],
+            "recording_url": "{{externalUrl}}",
+            "public_log_url": "{{externalUrl}}",
+            "disconnection_reason": "user_hangup",
+            "latency": {
+              "llm": {
+                "p99": {{redactedPhone}},
+                "min": 0,
+                "max": 2448,
+                "p90": 873,
+                "num": 16,
+                "values": [
+                  0,
+                  2448,
+                  396,
+                  441,
+                  554,
+                  586,
+                  491,
+                  0,
+                  663,
+                  1,
+                  1022,
+                  689,
+                  542,
+                  0,
+                  632,
+                  724
+                ],
+                "p50": 548,
+                "p95": 1378.5
+              },
+              "e2e": {
+                "p99": {{redactedPhone}},
+                "min": 580,
+                "max": 1397,
+                "p90": {{redactedPhone}},
+                "num": 6,
+                "values": [
+                  {{redactedPhone}},
+                  {{redactedPhone}},
+                  {{redactedPhone}},
+                  580,
+                  794,
+                  1397
+                ],
+                "p50": {{redactedPhone}},
+                "p95": {{redactedPhone}}
+              },
+              "tts": {
+                "p99": 371.65,
+                "min": 181,
+                "max": 376,
+                "p90": 331,
+                "num": 16,
+                "values": [
+                  183,
+                  189,
+                  181,
+                  224,
+                  186,
+                  201,
+                  233,
+                  376,
+                  263,
+                  257,
+                  222,
+                  267,
+                  263,
+                  347,
+                  243,
+                  315
+                ],
+                "p50": 238,
+                "p95": 354.25
+              }
+            },
+            "call_cost": {
+              "total_duration_unit_price": 0.225,
+              "product_costs": [
+                {
+                  "unit_price": 0,
+                  "product": "retell_platform",
+                  "cost": 0
+                },
+                {
+                  "unit_price": {{redactedPhone}},
+                  "product": "elevenlabs_tts",
+                  "cost": {{redactedPhone}}
+                },
+                {
+                  "unit_price": {{redactedPhone}},
+                  "product": "gpt_4o",
+                  "cost": {{redactedPhone}}
+                },
+                {
+                  "unit_price": 0.025,
+                  "product": "us_telephony",
+                  "cost": 2.15
+                }
+              ],
+              "combined_cost": 19.35,
+              "total_duration_seconds": 86
+            },
+            "call_analysis": {
+              "in_voicemail": false,
+              "call_summary": "The user, Priya, called to reschedule her appointment originally set for April 29, 2025, at 1:00 PM. After checking available slots, the agent successfully rescheduled the appointment to 3:00 PM on the same day. The user expressed satisfaction with the new time and thanked the agent before ending the call.",
+              "user_sentiment": "Positive",
+              "custom_analysis_data": {},
+              "call_successful": true
+            },
+            "opt_out_sensitive_data_storage": false,
+            "opt_in_signed_url": false,
+            "from_number": "{{redactedPhone}}",
+            "to_number": "{{redactedPhone}}",
+            "direction": "inbound"
+          }
+        },
+        "webhookUrl": "{{externalUrl}}",
+        "executionMode": "test"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cd7cea19fae68e6464508a8bc0bf1e55f6a97160cbacaaa09a9edcde9677afdf"
+  }
+}
